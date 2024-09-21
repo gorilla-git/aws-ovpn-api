@@ -111,24 +111,14 @@ if ! getent group nobody > /dev/null; then
     sudo groupadd nobody
 fi
 
-sudo ufw enable
-sudo ufw allow OpenSSH
-sudo ufw allow 1194/udp
-sudo ufw allow 8000
+#sudo ufw enable
+#sudo ufw allow OpenSSH
+#sudo ufw allow 1194/udp
+#sudo ufw allow 8000
 
-sudo ufw disable
-sudo ufw enable
+#sudo ufw disable
+#sudo ufw enable
 
 sudo systemctl -f enable openvpn-server@server.service
 sudo systemctl start openvpn-server@server.service
 
-cd /home/ubuntu/
-git clone https://github.com/gorilla-git/aws-ovpn-api.git
-cd aws-ovpn-api
-
-sudo apt install -y python3 python3-venv
-python3 -m venv env
-source env/bin/activate
-pip install fastapi uvicorn boto3 jupyterlab
-
-jupyter lab --ip='0.0.0.0' --port=8000 --NotebookApp.token='' --NotebookApp.password='' --no-browser
