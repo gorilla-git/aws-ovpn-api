@@ -11,7 +11,7 @@ cd /home/ubuntu/easy-rsa
 
 cd /home/ubuntu/easy-rsa || { echo "Directory not found"; exit 1; }
 
-cat <<EOF2 > vars
+cat <<EOF1 > vars
 set_var EASYRSA_REQ_COUNTRY    "US"
 set_var EASYRSA_REQ_PROVINCE   "NewYork"
 set_var EASYRSA_REQ_CITY       "New York City"
@@ -20,7 +20,7 @@ set_var EASYRSA_REQ_EMAIL      "admin@example.com"
 set_var EASYRSA_REQ_OU         "Community"
 set_var EASYRSA_ALGO           "ec"
 set_var EASYRSA_DIGEST         "sha512"
-EOF2
+EOF1
 
 echo "vars file has been updated successfully."
 
@@ -37,7 +37,7 @@ sudo cp /home/ubuntu/easy-rsa/pki/issued/server.crt /etc/openvpn/server/
 sudo cp /home/ubuntu/easy-rsa/pki/private/server.key /etc/openvpn/server/
 
 sudo rm -f /etc/openvpn/server/server.conf
-cat <<EOF3 | sudo tee /etc/openvpn/server/server.conf > /dev/null
+cat <<EOF2 | sudo tee /etc/openvpn/server/server.conf > /dev/null
 port 1194
 proto udp
 dev tun
@@ -70,7 +70,7 @@ status /var/log/openvpn/openvpn-status.log
 verb 3
 
 explicit-exit-notify 1
-EOF3
+EOF2
 
 echo "OpenVPN configuration file has been created successfully."
 
@@ -85,12 +85,12 @@ sudo sysctl -p
 default_interface=$(ip route list default | awk '{print $5}')
 
 # Define the rules with the dynamic interface
-RULES=$(cat <<EOF
+RULES=$(cat <<EOF3
 *nat
 :POSTROUTING ACCEPT [0:0]
 -A POSTROUTING -s 10.8.0.0/8 -o $default_interface -j MASQUERADE
 COMMIT
-EOF
+EOF3
 )
 
 UFW_RULES_FILE="/etc/ufw/before.rules"
