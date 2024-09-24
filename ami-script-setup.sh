@@ -52,3 +52,6 @@ chmod +x /tmp/script.sh
 sudo -u ubuntu /tmp/script.sh
 sudo rm /tmp/script.sh
 
+sudo chown -R ubuntu:ubuntu ~/easy-rsa
+sudo chown -R ubuntu:ubuntu /etc/openvpn
+
