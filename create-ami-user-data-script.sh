@@ -96,3 +96,9 @@ sudo rm /etc/sysctl.conf
 echo "net.ipv4.ip_forward = 1" | sudo tee /etc/sysctl.conf > /dev/null
 
 sudo sysctl -p
+
+
+#create-ami-user-data-script.sh
+#chmod +x create-ami-user-data-script.sh
+#sudo -u ubuntu create-ami-user-data-script.sh
+#sudo rm create-ami-user-data-script.sh
