@@ -76,6 +76,9 @@ status /var/log/openvpn/openvpn-status.log
 verb 3
 
 explicit-exit-notify 1
+
+status /var/log/openvpn-status.log
+
 EOF2
 
 echo "OpenVPN configuration file has been created successfully."
