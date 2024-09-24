@@ -102,3 +102,9 @@ sudo sysctl -p
 #chmod +x create-ami-user-data-script.sh
 #sudo -u ubuntu create-ami-user-data-script.sh
 #sudo rm create-ami-user-data-script.sh
+
+#sudo chown -R ubuntu:ubuntu ~/easy-rsa
+#sudo chown -R ubuntu:ubuntu /etc/openvpn
+
+#sudo chmod -R 700 /home/ubuntu/easy-rsa
+#sudo chmod -R 700  /etc/openvpn
