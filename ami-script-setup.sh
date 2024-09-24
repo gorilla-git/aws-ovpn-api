@@ -1,8 +1,5 @@
 #!/bin/bash
 
-cat << 'EOF' > /tmp/script.sh
-#!/bin/bash
-
 start_time=$(date +%s)
 
 sudo sysctl -p
@@ -46,7 +43,6 @@ sudo systemctl start openvpn-server@server.service
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
 echo "Script execution completed in $elapsed_time seconds."
-EOF
 
 #chmod +x /tmp/script.sh
 #sudo -u ubuntu /tmp/script.sh
