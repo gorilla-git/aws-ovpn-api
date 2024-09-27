@@ -14,12 +14,19 @@ db_params = {
     'port': os.environ.get('DBPORT')
 }
 
+upload_limit = 2
+download_limit = 2
+
 def create_and_run_script(upload_limit, download_limit):
+
+    upload_limit = str(upload_limit)
+    download_limit = str(download_limit)
+    
     script_content = f"""#!/bin/bash
 
     # Set your desired upload and download limits
-    UPLOAD_LIMIT="{upload_limit}"   # Change this to your desired upload limit (e.g., 512kbit, 2mbit)
-    DOWNLOAD_LIMIT="{download_limit}" # Change this to your desired download limit
+    UPLOAD_LIMIT="{upload_limit}mbit"   # Change this to your desired upload limit (e.g., 512kbit, 2mbit)
+    DOWNLOAD_LIMIT="{download_limit}mbit" # Change this to your desired download limit
     
     # Automatically get the OpenVPN tun interface
     VPN_INTERFACE=$(ip addr show | grep -o 'tun[0-9]*' | head -n 1)
@@ -251,6 +258,9 @@ def monitor_connections(): # thread 2
         if total_connections != last_connection_count:
             update_connected_users(db_params, instance_id, total_connections)
             last_connection_count = total_connections
+            upload_limit = 2 * last_connection_count
+            download_limit = 2 * last_connection_count
+            create_and_run_script(upload_limit, download_limit)
 
         if total_connections == 0:
             if zero_users_since is None:
@@ -266,11 +276,6 @@ def monitor_connections(): # thread 2
 
 import threading
 if __name__ == "__main__":
-    
-    upload_limit = '5mbit'
-    download_limit = '5mbit'
-    create_and_run_script(upload_limit, download_limit)
-    
     threads = []
     threads.append(threading.Thread(target=check_interrupt, daemon=True))
     threads[-1].start()
