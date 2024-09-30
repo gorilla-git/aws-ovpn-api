@@ -14,6 +14,127 @@ db_params = {
     'port': os.environ.get('DBPORT')
 }
 
+LocAMI = {
+    "America": {
+        "us-east-1": {
+            "ami": "ami-07c3c100de9b5f7f1",
+            "city": "North Virginia",
+            "sg_id": "sg-0a5c43024ef87b85d"
+        },
+        "us-east-2": {
+            "ami": "ami-080e26509cbadfe5e",
+            "city": "Ohio",
+            "sg_id": "sg-0f038b537a2d0a6a0"
+        },
+        "us-west-1": {
+            "ami": "ami-00c92552b99b8b282",
+            "city": "Northern California",
+            "sg_id": "sg-046c81cadf2a8d0db"
+        },
+        "us-west-2": {
+            "ami": "ami-01107cbf04bcd247e",
+            "city": "Oregon",
+            "sg_id": "sg-08a6b480db28269fe"
+        }
+    },
+    "Japan": {
+        "ap-northeast-1": {
+            "ami": "ami-0056d0265f87fa6a1",
+            "city": "Tokyo",
+            "sg_id": "sg-0ddcb55e325431a64"
+        },
+        "ap-northeast-3": {
+            "ami": "ami-08a2099630e98e56b",
+            "city": "Osaka",
+            "sg_id": "sg-0066d64f65e2147e0"
+        }
+    },
+    "Germany": {
+        "eu-central-1": {
+            "ami": "ami-05d47ac0a3fcbc28b",
+            "city": "Frankfurt",
+            "sg_id": "sg-0cb30fdf5d894e0ee"
+        }
+    },
+    "Sweden": {
+        "eu-north-1": {
+            "ami": "ami-06b4aff4fb6e78811",
+            "city": "Stockholm",
+            "sg_id": "sg-03bcb763c105f3af2"
+        }
+    },
+    "France": {
+        "eu-west-3": {
+            "ami": "ami-0d79a2ca3c968ba75",
+            "city": "Paris",
+            "sg_id": "sg-07858eb35f1c4429d"
+        }
+    },
+    "England": {
+        "eu-west-2": {
+            "ami": "ami-0ace8e723d0c0bb53",
+            "city": "London",
+            "sg_id": "sg-0f1e4d6ffae2acece"
+        }
+    },
+    "Ireland": {
+        "eu-west-1": {
+            "ami": "ami-008f79fb048296dbb",
+            "city": "Ireland",
+            "sg_id": "sg-04988421e051af054"
+        }
+    },
+    "India": {
+        "ap-south-1": {
+            "ami": "ami-0b635935327c308c4",
+            "city": "Mumbai",
+            "sg_id": "sg-0e2455615c527ce7f"
+        }
+    },
+    "South Korea": {
+        "ap-northeast-2": {
+            "ami": "ami-0a2e19cd17d28c42a",
+            "city": "Seoul",
+            "sg_id": "sg-06502eee9f09a63d4"
+        }
+    },
+    "UAE": {
+        "me-central-1": {
+            "ami": "ami-06112ac1c74718a7b",
+            "city": "UAE",
+            "sg_id": "sg-0e5c0bf8b4b6d8c02"
+        }
+    },
+    "Canada": {
+        "ca-central-1": {
+            "ami": "ami-0cb2c907351091caf",
+            "city": "Canada",
+            "sg_id": "sg-0455595d3e1ca080b"
+        }
+    },
+    "Brazil": {
+        "sa-east-1": {
+            "ami": "ami-00576744cb8878576",
+            "city": "Sao Paulo",
+            "sg_id": "sg-036f45e1300b5ef8a"
+        }
+    },
+    "Singapore": {
+        "ap-southeast-1": {
+            "ami": "ami-080a55f11de350d00",
+            "city": "Singapore",
+            "sg_id": "sg-09eca14f7be31663c"
+        }
+    },
+    "Australia": {
+        "ap-southeast-2": {
+            "ami": "ami-03d50aba5a66efed7",
+            "city": "Sydney",
+            "sg_id": "sg-02e73efe5d6a2deec"
+        }
+    }
+}
+
 upload_limit = 2
 download_limit = 2
 
@@ -66,6 +187,13 @@ def create_and_run_script(upload_limit, download_limit):
     os.system(f'sudo chmod +x {script_file_path}')
     os.system(f'sudo {script_file_path}')
     os.remove(script_file_path)
+
+def get_location(region):
+    for location, config in LocAMI.items():
+        for edge_location in list(config.keys()):
+            if  edge_location == region:
+                return location
+    return None
 
 def update_connected_users(db_params, instance_id, total_connections):
     update_query = """
@@ -205,10 +333,8 @@ def get_instance_info():
     instance_type = get_instance_metadata(token, "instance-type")
     region = get_instance_metadata(token, "placement/region")
     public_ip = get_instance_metadata(token, "public-ipv4")
-    availability_zone = get_instance_metadata(token, "placement/availability-zone")
     lifecycle = get_instance_metadata(token, "instance-life-cycle") or "on-demand"  
-
-    location = availability_zone if availability_zone else region
+    location = get_location(region)
 
     return {
         "instance_id": instance_id,
@@ -238,6 +364,7 @@ def check_interrupt(): # thread 1
         if (req_1.status_code == 401) or (req_2.status_code == 401):
             token = get_token()
         if (req_1.status_code == 200) or (req_2.status_code == 200):
+            #add create server
             instanceID = get_instance_id()
             for i in range(10):
                 if delete_server(db_params, instanceID):
@@ -246,7 +373,6 @@ def check_interrupt(): # thread 1
 
         time.sleep(5)
         
-
 def monitor_connections(): # thread 2
     instance_id = get_instance_id()
     last_connection_count = None
@@ -284,6 +410,6 @@ if __name__ == "__main__":
 
     try:
         while True:
-            time.sleep(1)  # Keep the main thread alive
+            time.sleep(1)  
     except KeyboardInterrupt:
         print("Exiting program...")
