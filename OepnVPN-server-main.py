@@ -239,11 +239,6 @@ def update_connected_users(db_params, instance_id, total_connections):
             conn.close()
 
 def delete_server(db_params, instance_id: str) -> bool:
-    global instance_location
-    clear_server_location_and_region(db_params, instance_id)
-    if instance_location is None:
-        instance_location = get_instance_info()['location']
-    create_vpn_instance(instance_location)
 
     if instance_id is None:
         return False
@@ -379,6 +374,13 @@ def check_interrupt(): # thread 1
         if (req_1.status_code == 200) or (req_2.status_code == 200):
             #add create server
             instanceID = get_instance_id()
+            
+            global instance_location
+            clear_server_location_and_region(db_params, instanceID)
+            if instance_location is None:
+                instance_location = get_instance_info()['location']
+            create_vpn_instance(instance_location)
+
             for i in range(10):
                 if delete_server(db_params, instanceID):
                     os.system("sudo shutdown now")
