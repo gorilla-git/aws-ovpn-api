@@ -6,21 +6,20 @@ import os
 import tempfile
 from datetime import datetime, timedelta
 
-import httpx
-import asyncio
-import base64
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
+import requests
+
+def create_vpn_instance(region):
+    url = f"https://ec2-44-208-52-100.compute-1.amazonaws.com/connect_vpn/{region}"
+    try:
+        response = requests.get(url, verify=False)
+        response.raise_for_status()  
+        return response.json() 
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}")
+    except Exception as err:
+        print(f"An error occurred: {err}")
 
 instance_location = None
-
-def aes_encrypt(plain_text: str, key: str, iv: str) -> str:
-    key_bytes = key.encode('utf-8')
-    iv_bytes = iv.encode('utf-8')
-    cipher = AES.new(key_bytes, AES.MODE_CBC, iv_bytes)
-    padded_plain_text = pad(plain_text.encode('utf-8'), AES.block_size)
-    encrypted_bytes = cipher.encrypt(padded_plain_text)
-    return base64.b64encode(encrypted_bytes).decode('utf-8')
 
 db_params = {
     'dbname': os.environ.get('DBNAME'),
@@ -29,25 +28,6 @@ db_params = {
     'host': os.environ.get('DBHOST'),
     'port': os.environ.get('DBPORT')
 }
-
-api_key = os.getenv("api_key")
-global_key = os.getenv("global_key")
-global_iv = os.getenv("global_iv")
-
-async def make_request(region):
-    url = f"https://ec2-44-208-52-100.compute-1.amazonaws.com/connect_vpn/{region}"
-    current_time_epoch = int(time.time() * 1000)
-    encrypted_time = aes_encrypt(str(current_time_epoch), global_key, global_iv)
-    headers = {
-        "api_key": api_key,
-        "time": encrypted_time,
-    }
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
-    if response.status_code == 200:
-        print("Response:", response.json())
-    else:
-        print(f"Error: {response.status_code} - {response.text}")
 
 LocAMI = {
     "America": {
@@ -335,9 +315,6 @@ def get_instance_info():
     lifecycle = get_instance_metadata(token, "instance-life-cycle") or "on-demand"  
     location = get_location(region)
 
-    global instance_location
-    instance_location = location
-
     return {
         "instance_id": instance_id,
         "instance_type": instance_type,
@@ -375,9 +352,9 @@ def check_interrupt(): # thread 1
                     if instance_location is None:
                         instance_location = get_instance_info()['location']
                     
-                    asyncio.run(make_request(instance_location))
+                    create_vpn_instance(instance_location)
 
-                    #os.system("sudo shutdown now")
+                    os.system("sudo shutdown now")
                     break
 
         time.sleep(5)
