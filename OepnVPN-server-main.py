@@ -6,6 +6,22 @@ import os
 import tempfile
 from datetime import datetime, timedelta
 
+import httpx
+import asyncio
+import base64
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+
+instance_location = None
+
+def aes_encrypt(plain_text: str, key: str, iv: str) -> str:
+    key_bytes = key.encode('utf-8')
+    iv_bytes = iv.encode('utf-8')
+    cipher = AES.new(key_bytes, AES.MODE_CBC, iv_bytes)
+    padded_plain_text = pad(plain_text.encode('utf-8'), AES.block_size)
+    encrypted_bytes = cipher.encrypt(padded_plain_text)
+    return base64.b64encode(encrypted_bytes).decode('utf-8')
+
 db_params = {
     'dbname': os.environ.get('DBNAME'),
     'user': os.environ.get('DBUSER'),
@@ -13,6 +29,25 @@ db_params = {
     'host': os.environ.get('DBHOST'),
     'port': os.environ.get('DBPORT')
 }
+
+api_key = os.getenv("api_key")
+global_key = os.getenv("global_key")
+global_iv = os.getenv("global_iv")
+
+async def make_request(region):
+    url = f"https://ec2-44-208-52-100.compute-1.amazonaws.com/connect_vpn/{region}"
+    current_time_epoch = int(time.time() * 1000)
+    encrypted_time = aes_encrypt(str(current_time_epoch), global_key, global_iv)
+    headers = {
+        "api_key": api_key,
+        "time": encrypted_time,
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+    if response.status_code == 200:
+        print("Response:", response.json())
+    else:
+        print(f"Error: {response.status_code} - {response.text}")
 
 LocAMI = {
     "America": {
@@ -300,6 +335,9 @@ def get_instance_info():
     lifecycle = get_instance_metadata(token, "instance-life-cycle") or "on-demand"  
     location = get_location(region)
 
+    global instance_location
+    instance_location = location
+
     return {
         "instance_id": instance_id,
         "instance_type": instance_type,
@@ -320,6 +358,7 @@ def get_instance_id():
     return req.text   
         
 def check_interrupt(): # thread 1
+    global instance_location
     token = get_token()
     while True:
         req_1 = requests.get("http://169.254.169.254/latest/meta-data/spot/instance-action", headers={"X-aws-ec2-metadata-token": token})
@@ -332,7 +371,13 @@ def check_interrupt(): # thread 1
             instanceID = get_instance_id()
             for i in range(10):
                 if delete_server(db_params, instanceID):
-                    os.system("sudo shutdown now")
+
+                    if instance_location is None:
+                        instance_location = get_instance_info()['location']
+                    
+                    asyncio.run(make_request(instance_location))
+
+                    #os.system("sudo shutdown now")
                     break
 
         time.sleep(5)
