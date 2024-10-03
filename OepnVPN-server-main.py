@@ -19,6 +19,34 @@ def create_vpn_instance(region):
     except Exception as err:
         print(f"An error occurred: {err}")
 
+def clear_server_location_and_region(db_params, instance_id):
+    update_query = """
+    UPDATE servers
+    SET region = '', location = ''
+    WHERE instance_id = %s;
+    """
+
+    try:
+        conn = psycopg2.connect(**db_params)
+        cur = conn.cursor()
+        cur.execute(update_query, (instance_id,))
+        conn.commit()
+
+        if cur.rowcount > 0:
+            print("Instance region and location cleared successfully.")
+            return True
+        else:
+            print("No matching instance found to update.")
+            return False
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
 instance_location = None
 
 db_params = {
@@ -212,10 +240,11 @@ def update_connected_users(db_params, instance_id, total_connections):
 
 def delete_server(db_params, instance_id: str) -> bool:
     global instance_location
+    clear_server_location_and_region(db_params, instance_id)
     if instance_location is None:
         instance_location = get_instance_info()['location']
     create_vpn_instance(instance_location)
-    
+
     if instance_id is None:
         return False
 
