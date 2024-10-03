@@ -211,6 +211,11 @@ def update_connected_users(db_params, instance_id, total_connections):
             conn.close()
 
 def delete_server(db_params, instance_id: str) -> bool:
+    global instance_location
+    if instance_location is None:
+        instance_location = get_instance_info()['location']
+    create_vpn_instance(instance_location)
+    
     if instance_id is None:
         return False
 
@@ -335,7 +340,6 @@ def get_instance_id():
     return req.text   
         
 def check_interrupt(): # thread 1
-    global instance_location
     token = get_token()
     while True:
         req_1 = requests.get("http://169.254.169.254/latest/meta-data/spot/instance-action", headers={"X-aws-ec2-metadata-token": token})
@@ -348,12 +352,6 @@ def check_interrupt(): # thread 1
             instanceID = get_instance_id()
             for i in range(10):
                 if delete_server(db_params, instanceID):
-
-                    if instance_location is None:
-                        instance_location = get_instance_info()['location']
-                    
-                    create_vpn_instance(instance_location)
-
                     os.system("sudo shutdown now")
                     break
 
